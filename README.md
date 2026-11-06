@@ -123,7 +123,7 @@ DB_PASSWORD=your_mysql_password
 JWT_SECRET=your_secure_jwt_secret
 ```
 
-The application reads these values through environment variables. **Never commit actual passwords or JWT secrets to GitHub.**
+The application reads these values through environment variables.
 
 ## How to Run
 
