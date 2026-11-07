@@ -113,7 +113,7 @@ public class OrderService {
             }
 
             Product product = productRepository
-                    .findById(item.getProductId())
+                    .findByIdWithLock(item.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND, "Product not found"));
 
@@ -168,6 +168,7 @@ public class OrderService {
 
         return convertToResponse(savedOrder);
     }
+
     @Transactional(readOnly = true)
     public List<OrderResponse> getMyOrders(String email) {
 
@@ -211,11 +212,13 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "User not found"));
 
-        Order order = orderRepository.findByIdAndUserId(
+        // Lock the order before checking its status
+        Order order = orderRepository.findByIdAndUserIdForUpdate(
                 orderId, user.getId()
         ).orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "Order not found"));
 
+        // Only pending orders can be cancelled
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -223,19 +226,29 @@ public class OrderService {
             );
         }
 
+        // Restore stock with product-level locking
         for (OrderItem item : order.getOrderItems()) {
 
-            Product product = item.getProduct();
+            Long productId = item.getProduct().getId();
+
+            Product product = productRepository
+                    .findByIdWithLock(productId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Product not found"));
 
             product.setQuantity(
                     product.getQuantity() + item.getQuantity()
             );
         }
 
+        // Update order status
         order.setStatus(OrderStatus.CANCELLED);
 
         return convertToResponse(order);
     }
+
+
+
 
     @Transactional
     public OrderResponse updateOrderStatus(
@@ -245,19 +258,20 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Order not found"));
 
+        if (newStatus == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Order status cannot be null");
+        }
+
         OrderStatus currentStatus = order.getStatus();
 
         boolean validTransition = switch (currentStatus) {
-            case PENDING ->
-                    newStatus == OrderStatus.CONFIRMED ||
-                            newStatus == OrderStatus.CANCELLED;
+            case PENDING -> newStatus == OrderStatus.CONFIRMED;
 
-            case CONFIRMED ->
-                    newStatus == OrderStatus.SHIPPED ||
-                            newStatus == OrderStatus.CANCELLED;
+            case CONFIRMED -> newStatus == OrderStatus.SHIPPED;
 
-            case SHIPPED ->
-                    newStatus == OrderStatus.DELIVERED;
+            case SHIPPED -> newStatus == OrderStatus.DELIVERED;
 
             case DELIVERED, CANCELLED -> false;
         };
@@ -265,8 +279,7 @@ public class OrderService {
         if (!validTransition) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Invalid order status transition"
-            );
+                    "Invalid order status transition");
         }
 
         order.setStatus(newStatus);
