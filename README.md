@@ -1,6 +1,8 @@
 # ShopSphere – E-Commerce Backend System
 
-A RESTful E-Commerce Backend application built using **Java, Spring Boot, Spring Security, JWT, Spring Data JPA, and MySQL**. ShopSphere provides backend functionality for an online shopping platform, including product management, customer authentication, shopping cart operations, checkout, and order management.
+A RESTful E-Commerce Backend application built using **Java, Spring Boot, Spring Security, JWT, Spring Data JPA, and MySQL**.
+
+ShopSphere provides backend functionality for an online shopping platform, including user authentication, product management, shopping cart operations, checkout, and order management.
 
 ## Features
 
@@ -12,10 +14,10 @@ A RESTful E-Commerce Backend application built using **Java, Spring Boot, Spring
 
 ### Product Management
 - Create, retrieve, update, and delete products (Admin).
-- Browse products (Public).
-- Product search by name.
+- Browse products.
+- Search products by name.
 - Pagination and sorting.
-- Request validation and centralized exception handling.
+- Request validation and exception handling.
 
 ### Shopping Cart
 - Add products to cart.
@@ -26,29 +28,37 @@ A RESTful E-Commerce Backend application built using **Java, Spring Boot, Spring
 - Validate product availability.
 
 ### Order Management
-- Place orders directly.
-- Checkout using cart items.
-- View order history and individual orders.
-- Cancel eligible orders.
-- Track order status.
-- Validate stock and update inventory during order placement.
+- Place orders directly or through cart checkout.
+- View order history and order details.
+- Cancel eligible pending orders.
+- Track and update order status.
+- Validate product stock before placing orders.
+- Automatically decrease inventory after successful order placement.
+- Restore inventory when an eligible order is cancelled.
+
+### Inventory & Transaction Management
+- Database transactions using Spring's `@Transactional`.
+- Pessimistic write locking for product inventory during order placement.
+- Lock orders during cancellation to prevent concurrent cancellation issues.
+- Maintain inventory consistency during concurrent order operations.
 
 ## Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| Java | Programming language |
+| Java 17 | Programming language |
 | Spring Boot | Backend framework |
-| Spring Security | Application security |
-| JWT | Authentication |
+| Spring Security | Authentication and authorization |
+| JWT | Token-based authentication |
 | Spring Data JPA | Database operations |
 | Hibernate | ORM |
 | MySQL | Relational database |
 | Maven | Build and dependency management |
+| JUnit & Mockito dependencies | Automated testing support |
 | Postman | API testing |
 | IntelliJ IDEA | Development environment |
 
-## Architecture
+## Project Architecture
 
 The application follows a layered architecture:
 
@@ -56,7 +66,7 @@ The application follows a layered architecture:
 - **Service Layer:** Implements business logic.
 - **Repository Layer:** Communicates with the database.
 - **Entity Layer:** Represents database tables.
-- **DTO Layer:** Manages API request and response data.
+- **DTO Layer:** Handles API request and response data.
 - **Security Layer:** Handles JWT authentication and authorization.
 
 ## API Endpoints
@@ -114,18 +124,26 @@ Create a MySQL database:
 CREATE DATABASE ecommerce_db;
 ```
 
-Configure the following environment variables in your IDE:
+Configure these environment variables:
 
-```text
+```properties
 DB_URL=jdbc:mysql://localhost:3306/ecommerce_db
 DB_USERNAME=your_mysql_username
 DB_PASSWORD=your_mysql_password
 JWT_SECRET=your_secure_jwt_secret
 ```
 
-The application reads these values through environment variables.
+**Important:** Never commit actual database passwords or JWT secrets to GitHub.
 
-## How to Run
+## How to Run Locally
+
+### Prerequisites
+- Java 17 or later
+- MySQL
+- Maven
+- IntelliJ IDEA (recommended)
+
+### Steps
 
 1. Clone the repository:
 
@@ -135,30 +153,43 @@ git clone https://github.com/mounikamalineni26/shopsphere-ecommerce-backend.git
 
 2. Open the project in IntelliJ IDEA.
 
-3. Configure the environment variables listed above.
+3. Create the MySQL database:
 
-4. Make sure MySQL is running.
-
-5. Run the main Spring Boot application:
-
-```text
-EcommerceBackendApplication.java
+```sql
+CREATE DATABASE ecommerce_db;
 ```
 
-6. The application starts at:
+4. Configure the required environment variables.
 
-```text
-http://localhost:8080
-```
+5. Make sure MySQL is running.
+
+6. Run the main application:
+
+`EcommerceBackendApplication.java`
+
+7. The application runs at:
+
+`http://localhost:8080`
 
 Use Postman to test the REST APIs. For protected endpoints, include your JWT token in the Authorization header as a Bearer token.
 
+## Testing
+
+- REST APIs are tested using Postman.
+- Maven test command:
+
+```bash
+mvn clean test
+```
+
+
 ## Future Improvements
 
-- Improve inventory consistency and concurrent purchase handling.
-- Add automated unit and integration tests.
+- Add comprehensive JUnit and Mockito unit tests.
+- Add integration testing for critical order workflows.
 - Integrate Swagger/OpenAPI documentation.
 - Dockerize and deploy the application.
+- Improve monitoring and application logging.
 
 ## Author
 
